@@ -112,16 +112,24 @@ class ExcelManager:
         self.modificar_despachos(hoja)
         return self.guardar_modificado()
 
-
 class ExcelApp(tk.Tk):
     """Clase principal que maneja la interfaz Tkinter."""
     def __init__(self):
         super().__init__()
         self.title("Odoo Excel Modifier")
-        self.geometry("500x300")
+        self.geometry("500x250")
+
+        # --- Agregar icono personalizado ---
+        icon_path = os.path.join(os.path.dirname(__file__), "igit acon.ico")
+        if os.path.exists(icon_path):
+            try:
+                self.iconbitmap(icon_path)
+            except Exception:
+                pass  # En caso de error (Linux/Mac), simplemente lo omite
 
         self.excel_manager = ExcelManager()
         self._crear_widgets()
+        
 
     def _crear_widgets(self):
         """Crea los elementos de la interfaz."""
