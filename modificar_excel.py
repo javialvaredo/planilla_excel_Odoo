@@ -67,7 +67,7 @@ class ExcelManager:
                     celda_f.value = f"={valor}*EUR"
                 celda_f.number_format = '#,##0'
 
-    def modificar_despachos(self, hoja):
+    def modificar_despachos_(self, hoja):
         """
         Solo modifica las filas donde columna B contiene:
         - 'DESPACHOS' → =valor*0.79*TC
@@ -97,12 +97,101 @@ class ExcelManager:
 
             celda_e.number_format = '#,##0'
 
-    def guardar_modificado_(self):
-        """Guarda el archivo modificado con sufijo _modificado."""
-        self.workbook.save(self.modificado_path)
-        return self.modificado_path
-    
+    def modificar_despachos(self, hoja):
+        """
+        Modifica filas donde columna B contiene:
+        - 'DESPACHOS' → =valor*0.79*TC (ajustado por tipo de moneda en G)
+        - 'TR_EXTERIOR' u otros → =valor*TC (ajustado por tipo de moneda en G)
+        
+        Si moneda = 'ARS', deja el valor sin multiplicar.
+        Escribe el resultado en columna E.
+        """
+        ws = self.workbook[hoja]
 
+        for fila in range(1, ws.max_row + 1):  # Empieza en 2 para saltar encabezados
+            celda_b = ws[f"B{fila}"]
+            celda_g = ws[f"G{fila}"]  # Moneda
+            celda_e = ws[f"E{fila}"]
+            celda_f = ws[f"F{fila}"]
+
+            descripcion = str(celda_b.value).strip().upper() if celda_b.value else ""
+            moneda = str(celda_g.value).strip().upper() if celda_g.value else ""
+
+            # Solo procesar si hay texto en B
+            if not descripcion:
+                continue
+
+            # Intentar obtener el valor numérico en F
+            try:
+                valor = float(celda_f.value)
+            except (ValueError, TypeError):
+                continue
+
+            # Determinar el multiplicador según moneda
+            if moneda == "USD":
+                tc_str = "TC"
+            elif moneda == "EUR":
+                tc_str = "EUR"
+            elif moneda == "ARS":
+                tc_str = ""  # sin tipo de cambio
+            else:
+                tc_str = "TC"  # por defecto usar TC
+
+            # Aplicar lógica según tipo
+            if "DESPACHOS" in descripcion:
+                if moneda == "ARS":
+                    celda_e.value = f"={valor}*0.79"
+                else:
+                    celda_e.value = f"={valor}*0.79*{tc_str}"
+            elif "TR_EXTERIOR" in descripcion or descripcion:
+                if moneda == "ARS":
+                    celda_e.value = f"={valor}"
+                else:
+                    celda_e.value = f"={valor}*{tc_str}"
+            else:
+                continue
+
+            celda_e.number_format = '#,##0'
+
+
+
+    def modificar_oc_nacionales(self, hoja):
+        """
+        Modifica las filas de la hoja donde corresponde a OC NACIONALES.
+        Aplica:
+        - Si moneda = 'USD' → =valor*TC
+        - Si moneda = 'EUR' → =valor*EUR (por ejemplo)
+        - Si moneda = 'ARS' → deja el valor sin cambio.
+        Escribe el resultado en columna E.
+        """
+        ws = self.workbook[hoja]
+
+        for fila in range(1, ws.max_row + 1):
+            celda_g = ws[f"G{fila}"]  # Moneda
+            celda_e = ws[f"E{fila}"]
+            celda_f = ws[f"F{fila}"]
+
+            moneda = str(celda_g.value).strip().upper() if celda_g.value else ""
+            if not moneda:
+                continue
+
+            try:
+                valor = float(celda_f.value)
+            except (ValueError, TypeError):
+                continue
+
+            if moneda == "USD":
+                celda_e.value = f"={valor}*TC"
+            elif moneda == "EUR":
+                celda_e.value = f"={valor}*EUR"
+            elif moneda == "ARS":
+                celda_e.value = valor  # deja el valor tal cual
+            else:
+                continue  # ignora otras monedas no reconocidas
+
+            celda_e.number_format = '#,##0'
+
+   
     def guardar_modificado(self):
         """Guarda el archivo modificado con sufijo _modificado y fecha/hora."""
         # Obtener fecha y hora actuales en formato corto
@@ -135,7 +224,7 @@ class ExcelApp(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Odoo Excel Modifier")
-        self.geometry("500x250")
+        self.geometry("500x350")
 
         # --- Agregar icono personalizado ---
         icon_path = os.path.join(os.path.dirname(__file__), "icon.ico")
@@ -148,32 +237,51 @@ class ExcelApp(tk.Tk):
         self.excel_manager = ExcelManager()
         self._crear_widgets()
         
-
     def _crear_widgets(self):
         """Crea los elementos de la interfaz."""
         self.label_archivo = tk.Label(self, text="Ningún archivo seleccionado")
         self.label_archivo.pack(pady=10)
 
+        # --- Botón para abrir el archivo Excel ---
         btn_abrir = tk.Button(self, text="Abrir Excel", command=self.abrir_excel)
         btn_abrir.pack(pady=5)
 
+        # --- Botón para aplicar fórmulas a OC Clientes ---
         self.btn_modificar = tk.Button(
-            self, text="Aplicar fórmulas OC Clientes", command=self.ejecutar_proceso_pedidos
+            self,
+            text="Aplicar fórmulas OC Clientes",
+            command=self.ejecutar_proceso_pedidos
         )
         self.btn_modificar.pack(pady=10)
         self.btn_modificar.config(state="disabled")
 
+        # --- Botón para aplicar fórmulas a Despachos / Tr_Exterior ---
         self.btn_despachos = tk.Button(
-            self, text="Aplicar fórmulas Despachos / Tr_Exterior", command=self.ejecutar_despachos
+            self,
+            text="Aplicar fórmulas Despachos / Tr_Exterior",
+            command=self.ejecutar_despachos
         )
         self.btn_despachos.pack(pady=10)
         self.btn_despachos.config(state="disabled")
 
+        # --- Nuevo botón para aplicar fórmulas a OC Nacionales ---
+        self.btn_oc_nacionales = tk.Button(
+            self,
+            text="Aplicar fórmulas OC Nacionales",
+            command=self.ejecutar_oc_nacionales
+        )
+        self.btn_oc_nacionales.pack(pady=10)
+        self.btn_oc_nacionales.config(state="disabled")
+
+        # --- Botón para abrir el archivo modificado ---
         self.btn_abrir_modificado = tk.Button(
-            self, text="Abrir Excel Modificado", command=self.abrir_modificado
+            self,
+            text="Abrir Excel Modificado",
+            command=self.abrir_modificado
         )
         self.btn_abrir_modificado.pack(pady=10)
         self.btn_abrir_modificado.config(state="disabled")
+    
 
     def abrir_excel(self):
         """Permite seleccionar y abrir un archivo Excel."""
@@ -184,8 +292,12 @@ class ExcelApp(tk.Tk):
         if file_path:
             if self.excel_manager.abrir_archivo(file_path):
                 self.label_archivo.config(text=f"Archivo: {os.path.basename(file_path)}")
+                
+                # Habilitar botones después de cargar el archivo
                 self.btn_modificar.config(state="normal")
                 self.btn_despachos.config(state="normal")
+                self.btn_oc_nacionales.config(state="normal")  
+
 
     def ejecutar_proceso_pedidos(self):
         """Ejecuta el proceso completo: limpiar E y modificar col. F según col. G."""
@@ -219,6 +331,33 @@ class ExcelApp(tk.Tk):
                 messagebox.showerror("Error", f"No se pudo abrir el archivo:\n{e}")
         else:
             messagebox.showwarning("Atención", "No existe el archivo modificado.")
+
+    def ejecutar_oc_nacionales(self):
+        """Ejecuta el proceso de modificación para OC Nacionales."""
+        if not self.excel_manager.file_path:
+            messagebox.showwarning("Atención", "Primero abra un archivo Excel.")
+            return
+
+        hoja = "Hoja1"
+
+        try:
+            # Llamamos al método del ExcelManager que hace la modificación
+            self.excel_manager.modificar_oc_nacionales(hoja)
+
+            # Guardamos el archivo modificado
+            ruta_modificada = self.excel_manager.guardar_modificado()
+
+            messagebox.showinfo(
+                "Éxito",
+                f"Se aplicaron las fórmulas de OC Nacionales correctamente.\nArchivo guardado en:\n{ruta_modificada}"
+            )
+
+            # Habilitar el botón para abrir el Excel modificado
+            self.btn_abrir_modificado.config(state="normal")
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Ocurrió un error al modificar el archivo:\n{e}")
+
 
 
 if __name__ == "__main__":
