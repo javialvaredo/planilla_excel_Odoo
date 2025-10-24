@@ -1,3 +1,4 @@
+from datetime import datetime
 import tkinter as tk
 from tkinter import filedialog, messagebox
 import os
@@ -96,10 +97,27 @@ class ExcelManager:
 
             celda_e.number_format = '#,##0'
 
-    def guardar_modificado(self):
+    def guardar_modificado_(self):
         """Guarda el archivo modificado con sufijo _modificado."""
         self.workbook.save(self.modificado_path)
         return self.modificado_path
+    
+
+    def guardar_modificado(self):
+        """Guarda el archivo modificado con sufijo _modificado y fecha/hora."""
+        # Obtener fecha y hora actuales en formato corto
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
+
+        # Separar nombre base y extensión del archivo original
+        base, ext = os.path.splitext(self.file_path)
+
+        # Crear nuevo nombre con sufijo y timestamp
+        self.modificado_path = f"{base}_{timestamp}{ext}"
+
+        # Guardar el archivo
+        self.workbook.save(self.modificado_path)
+        return self.modificado_path
+
 
     def limpiar_y_modificar(self, hoja="Hoja1"):
         """Ejecuta todo el proceso: limpiar E y modificar F según G."""
@@ -120,7 +138,7 @@ class ExcelApp(tk.Tk):
         self.geometry("500x250")
 
         # --- Agregar icono personalizado ---
-        icon_path = os.path.join(os.path.dirname(__file__), "igit acon.ico")
+        icon_path = os.path.join(os.path.dirname(__file__), "icon.ico")
         if os.path.exists(icon_path):
             try:
                 self.iconbitmap(icon_path)
