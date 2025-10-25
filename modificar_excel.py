@@ -67,36 +67,6 @@ class ExcelManager:
                     celda_f.value = f"={valor}*EUR"
                 celda_f.number_format = '#,##0'
 
-    def modificar_despachos_(self, hoja):
-        """
-        Solo modifica las filas donde columna B contiene:
-        - 'DESPACHOS' → =valor*0.79*TC
-        - 'TR_EXTERIOR' → =valor*TC
-        Escribe el resultado en columna E.
-        """
-        ws = self.workbook[hoja]
-
-        for fila in range(1, ws.max_row + 1):
-            celda_b = ws[f"B{fila}"]
-            celda_e = ws[f"E{fila}"]
-            celda_f = ws[f"F{fila}"]
-
-            descripcion = str(celda_b.value).strip().upper() if celda_b.value else ""
-            if not ("DESPACHOS" in descripcion or "TR_EXTERIOR" in descripcion):
-                continue
-
-            try:
-                valor = float(celda_f.value)
-            except (ValueError, TypeError):
-                continue
-
-            if "DESPACHOS" in descripcion:
-                celda_e.value = f"={valor}*0.79*TC"
-            elif "TR_EXTERIOR" in descripcion:
-                celda_e.value = f"={valor}*TC"
-
-            celda_e.number_format = '#,##0'
-
     def modificar_despachos(self, hoja):
         """
         Modifica filas donde columna B contiene:
@@ -108,7 +78,7 @@ class ExcelManager:
         """
         ws = self.workbook[hoja]
 
-        for fila in range(1, ws.max_row + 1):  # Empieza en 2 para saltar encabezados
+        for fila in range(1, ws.max_row + 1):  
             celda_b = ws[f"B{fila}"]
             celda_g = ws[f"G{fila}"]  # Moneda
             celda_e = ws[f"E{fila}"]
@@ -297,6 +267,10 @@ class ExcelApp(tk.Tk):
                 self.btn_modificar.config(state="normal")
                 self.btn_despachos.config(state="normal")
                 self.btn_oc_nacionales.config(state="normal")  
+                
+        # 🔹 Obtener automáticamente el nombre de la primera hoja
+        self.primera_hoja = self.excel_manager.workbook.sheetnames[0]
+        
 
 
     def ejecutar_proceso_pedidos(self):
@@ -304,33 +278,30 @@ class ExcelApp(tk.Tk):
         if not self.excel_manager.file_path:
             messagebox.showwarning("Atención", "Primero abra un archivo Excel.")
             return
+        hoja = self.primera_hoja
 
-        modificado_path = self.excel_manager.limpiar_y_modificar("Hoja1")
+        modificado_path = self.excel_manager.limpiar_y_modificar(hoja)
         messagebox.showinfo("Proceso completado", f"Archivo guardado como:\n{modificado_path}")
         self.btn_abrir_modificado.config(state="normal")
 
+    
     def ejecutar_despachos(self):
         """Ejecuta solo la modificación de filas con 'Despachos' o 'Tr_Exterior'."""
         if not self.excel_manager.file_path:
             messagebox.showwarning("Atención", "Primero abra un archivo Excel.")
             return
+        
+        hoja = self.primera_hoja
+        modificado_path = self.excel_manager.aplicar_despachos(hoja) #priner hoja del libro
 
-        modificado_path = self.excel_manager.aplicar_despachos("Hoja1")
-        messagebox.showinfo("Proceso completado", f"Archivo actualizado para Despachos / Tr_Exterior:\n{modificado_path}")
+        messagebox.showinfo(
+            "Proceso completado",
+            f"Archivo actualizado para Despachos / Tr_Exterior:\n{modificado_path}"
+        )
         self.btn_abrir_modificado.config(state="normal")
 
-    def abrir_modificado(self):
-        """Abre el archivo modificado en Excel (Windows)."""
-        if self.excel_manager.modificado_path and os.path.exists(self.excel_manager.modificado_path):
-            try:
-                if os.name == 'nt':
-                    os.startfile(self.excel_manager.modificado_path)
-                else:
-                    subprocess.call(['open', self.excel_manager.modificado_path])
-            except Exception as e:
-                messagebox.showerror("Error", f"No se pudo abrir el archivo:\n{e}")
-        else:
-            messagebox.showwarning("Atención", "No existe el archivo modificado.")
+
+    
 
     def ejecutar_oc_nacionales(self):
         """Ejecuta el proceso de modificación para OC Nacionales."""
@@ -338,7 +309,7 @@ class ExcelApp(tk.Tk):
             messagebox.showwarning("Atención", "Primero abra un archivo Excel.")
             return
 
-        hoja = "Hoja1"
+        hoja = self.primera_hoja
 
         try:
             # Llamamos al método del ExcelManager que hace la modificación
@@ -357,6 +328,19 @@ class ExcelApp(tk.Tk):
 
         except Exception as e:
             messagebox.showerror("Error", f"Ocurrió un error al modificar el archivo:\n{e}")
+
+    def abrir_modificado(self):
+        """Abre el archivo modificado en Excel (Windows)."""
+        if self.excel_manager.modificado_path and os.path.exists(self.excel_manager.modificado_path):
+            try:
+                if os.name == 'nt':
+                    os.startfile(self.excel_manager.modificado_path)
+                else:
+                    subprocess.call(['open', self.excel_manager.modificado_path])
+            except Exception as e:
+                messagebox.showerror("Error", f"No se pudo abrir el archivo:\n{e}")
+        else:
+            messagebox.showwarning("Atención", "No existe el archivo modificado.")
 
 
 
