@@ -1,9 +1,10 @@
-from datetime import datetime
+import datetime
 import tkinter as tk
 from tkinter import filedialog, messagebox
 import os
 import subprocess
 from openpyxl import load_workbook
+from openpyxl.styles import Alignment
 
 class ExcelManager:
     """Clase encargada de manejar y modificar archivos Excel."""
@@ -29,6 +30,26 @@ class ExcelManager:
         ws = self.workbook[hoja]
         for fila in range(1, ws.max_row + 1):
             ws[f"{columna}{fila}"].value = None
+
+
+
+    def formatear_fechas(self, hoja, columna_fechas="A", columna_centrar="B"):
+        """
+        Formatea fechas en la columna indicada y centra
+        también toda la columna B (u otra que elijas).
+        """
+        ws = self.workbook[hoja]
+
+        # ---- Formatear y centrar columna de fechas ----
+        for celda in ws[columna_fechas]:
+            if isinstance(celda.value, (datetime.datetime, datetime.date)):
+                celda.number_format = "DD/MM/YY"
+                celda.alignment = Alignment(horizontal="center")
+
+        # ---- Centrar también la columna B ----
+        for celda in ws[columna_centrar]:
+            celda.alignment = Alignment(horizontal="center")
+
 
     def modificar_columna_condicional(self, hoja):
         """
@@ -160,13 +181,14 @@ class ExcelManager:
                 continue  # ignora otras monedas no reconocidas
 
             celda_e.number_format = '#,##0'
+            self.formatear_fechas(hoja, columna_fechas="A", columna_centrar="B")
 
    
     def guardar_modificado(self):
         """Guarda el archivo modificado con sufijo _modificado y fecha/hora."""
         # Obtener fecha y hora actuales en formato corto
-        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
-
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
+        
         # Separar nombre base y extensión del archivo original
         base, ext = os.path.splitext(self.file_path)
 
@@ -182,11 +204,13 @@ class ExcelManager:
         """Ejecuta todo el proceso: limpiar E y modificar F según G."""
         self.limpiar_columna(hoja, "E")
         self.modificar_columna_condicional(hoja)
+        self.formatear_fechas(hoja, columna_fechas="A", columna_centrar="B")
         return self.guardar_modificado()
 
     def aplicar_despachos(self, hoja="Hoja1"):
         """Ejecuta solo la modificación de despachos y tr_exterior."""
         self.modificar_despachos(hoja)
+        self.formatear_fechas(hoja, columna_fechas="A", columna_centrar="B")
         return self.guardar_modificado()
 
 class ExcelApp(tk.Tk):
