@@ -205,12 +205,20 @@ class ExcelManager:
         self.limpiar_columna(hoja, "E")
         self.modificar_columna_condicional(hoja)
         self.formatear_fechas(hoja, columna_fechas="A", columna_centrar="B")
+        
+        # 🔹 Borrar (vaciar) columna G al final
+        self.limpiar_columna(hoja, "G")
+
         return self.guardar_modificado()
 
     def aplicar_despachos(self, hoja="Hoja1"):
         """Ejecuta solo la modificación de despachos y tr_exterior."""
         self.modificar_despachos(hoja)
         self.formatear_fechas(hoja, columna_fechas="A", columna_centrar="B")
+        # 🔹 Borrar (vaciar) columnas
+        self.limpiar_columna(hoja, "G")
+        self.limpiar_columna(hoja, "F")
+        
         return self.guardar_modificado()
 
 class ExcelApp(tk.Tk):
@@ -240,10 +248,10 @@ class ExcelApp(tk.Tk):
         btn_abrir = tk.Button(self, text="Abrir Excel", command=self.abrir_excel)
         btn_abrir.pack(pady=5)
 
-        # --- Botón para aplicar fórmulas a OC Clientes ---
+        # --- Botón para aplicar fórmulas a OC Ventas ---
         self.btn_modificar = tk.Button(
             self,
-            text="Aplicar fórmulas OC Clientes",
+            text="Aplicar fórmulas OC Ventas",
             command=self.ejecutar_proceso_pedidos
         )
         self.btn_modificar.pack(pady=10)
@@ -338,6 +346,10 @@ class ExcelApp(tk.Tk):
         try:
             # Llamamos al método del ExcelManager que hace la modificación
             self.excel_manager.modificar_oc_nacionales(hoja)
+
+            # 🔹 Borrar columnas usadas para el cálculo
+            self.excel_manager.limpiar_columna(hoja, "F")
+            self.excel_manager.limpiar_columna(hoja, "G")
 
             # Guardamos el archivo modificado
             ruta_modificada = self.excel_manager.guardar_modificado()
