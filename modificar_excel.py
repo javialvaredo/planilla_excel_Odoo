@@ -54,7 +54,7 @@ class ExcelManager:
     def modificar_columna_condicional(self, hoja):
         """
         Modifica columnas E y F según condiciones:
-        - Si columna B contiene 'Despachos' → escribe en E: =valor*0.79*TC
+        - Si columna B contiene 'Despachos' → escribe en E: =valor*0.79*TC o *0.55 segun corresponda
         - Si columna G = 'USD' → en F: =valor*TC
         - Si columna G = 'EUR' → en F: =valor*EUR
         - Si columna G = 'ARS' → deja valor sin cambios
@@ -79,7 +79,7 @@ class ExcelManager:
                 continue
 
             if "DESPACHOS" in descripcion:
-                celda_e.value = f"={valor}*0.79*TC"
+                celda_e.value = f"={valor}*0.55*TC"
                 celda_e.number_format = '#,##0'
             else:
                 if moneda == "USD":
@@ -91,7 +91,7 @@ class ExcelManager:
     def modificar_despachos(self, hoja):
         """
         Modifica filas donde columna B contiene:
-        - 'DESPACHOS' → =valor*0.79*TC (ajustado por tipo de moneda en G)
+        - 'DESPACHOS' → =valor*0.79*TC o *0.55 segun corresponda el coeficiente (ajustado por tipo de moneda en G)
         - 'TR_EXTERIOR' u otros → =valor*TC (ajustado por tipo de moneda en G)
         
         Si moneda = 'ARS', deja el valor sin multiplicar.
@@ -131,9 +131,9 @@ class ExcelManager:
             # Aplicar lógica según tipo
             if "DESPACHOS" in descripcion:
                 if moneda == "ARS":
-                    celda_e.value = f"={valor}*0.79"
+                    celda_e.value = f"={valor}*0.55"
                 else:
-                    celda_e.value = f"={valor}*0.79*{tc_str}"
+                    celda_e.value = f"={valor}*0.55*{tc_str}"
             elif "TR_EXTERIOR" in descripcion or descripcion:
                 if moneda == "ARS":
                     celda_e.value = f"={valor}"
