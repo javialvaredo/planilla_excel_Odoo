@@ -245,7 +245,7 @@ class ExcelApp(tk.Tk):
         self.label_archivo.pack(pady=10)
 
         # --- Botón para abrir el archivo Excel ---
-        btn_abrir = tk.Button(self, text="Abrir Excel", command=self.abrir_excel)
+        btn_abrir = tk.Button(self, text="Abrir archivo excel", command=self.abrir_excel)
         btn_abrir.pack(pady=5)
 
         # --- Botón para aplicar fórmulas a OC Ventas ---
@@ -315,6 +315,7 @@ class ExcelApp(tk.Tk):
         modificado_path = self.excel_manager.limpiar_y_modificar(hoja)
         messagebox.showinfo("Proceso completado", f"Archivo guardado como:\n{modificado_path}")
         self.btn_abrir_modificado.config(state="normal")
+        self.abrir_modificado()
 
     
     def ejecutar_despachos(self):
@@ -331,6 +332,7 @@ class ExcelApp(tk.Tk):
             f"Archivo actualizado para Despachos / Tr_Exterior:\n{modificado_path}"
         )
         self.btn_abrir_modificado.config(state="normal")
+        self.abrir_modificado()
 
 
     
@@ -361,9 +363,11 @@ class ExcelApp(tk.Tk):
 
             # Habilitar el botón para abrir el Excel modificado
             self.btn_abrir_modificado.config(state="normal")
+            self.abrir_modificado()
 
         except Exception as e:
             messagebox.showerror("Error", f"Ocurrió un error al modificar el archivo:\n{e}")
+            
 
     def abrir_modificado(self):
         """Abre el archivo modificado en Excel (Windows)."""
