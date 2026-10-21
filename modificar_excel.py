@@ -8,6 +8,10 @@ from openpyxl.styles import Alignment
 
 class ExcelManager:
     """Clase encargada de manejar y modificar archivos Excel."""
+
+    COEF_DESPACHOS = 0.79  
+    """ es el coeficiente que aplica segun la exension en el IVA"""
+
     def __init__(self):
         self.workbook = None
         self.file_path = None
@@ -79,7 +83,7 @@ class ExcelManager:
                 continue
 
             if "DESPACHOS" in descripcion:
-                celda_e.value = f"={valor}*0.55*TC"
+                celda_e.value = f"={valor}*{self.COEF_DESPACHOS}*TC"
                 celda_e.number_format = '#,##0'
             else:
                 if moneda == "USD":
@@ -131,9 +135,9 @@ class ExcelManager:
             # Aplicar lógica según tipo
             if "DESPACHOS" in descripcion:
                 if moneda == "ARS":
-                    celda_e.value = f"={valor}*0.55"
+                    celda_e.value = f"={valor}*{self.COEF_DESPACHOS}"
                 else:
-                    celda_e.value = f"={valor}*0.55*{tc_str}"
+                    celda_e.value = f"={valor}*{self.COEF_DESPACHOS}*{tc_str}"
             elif "TR_EXTERIOR" in descripcion or descripcion:
                 if moneda == "ARS":
                     celda_e.value = f"={valor}"
